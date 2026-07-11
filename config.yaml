@@ -1,0 +1,11 @@
+app:
+  name: Video2MD
+
+download:
+  timeout: 60
+
+speech:
+  model: large-v3
+
+output:
+  directory: output

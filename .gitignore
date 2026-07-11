@@ -216,3 +216,19 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+# ==========================
+# Video2MD Project
+# ==========================
+
+# VS Code
+.vscode/
+
+# Generated outputs
+output/
+downloads/
+transcripts/
+
+# Local databases
+*.db

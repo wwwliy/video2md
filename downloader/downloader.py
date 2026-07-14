@@ -1,80 +1,55 @@
 """
-Video downloader.
+Unified Video Downloader
 
-Current implementation:
+入口：
 
-- Douyin
-- Public videos
+Downloader().download(url)
 
-Future:
+负责：
 
-- TikTok
-- YouTube
-- Facebook
-- Instagram
+1. 判断平台
+2. 选择 Provider
+3. 下载视频
 """
 
 from pathlib import Path
 
-import yt_dlp
-
-from core.models import UrlInfo
+from downloader.platform_detector import get_greenvideo_page
+from downloader.providers.greenvideo import GreenVideoDownloader
 
 
 class Downloader:
-    """
-    Download videos using yt-dlp.
-    """
 
-    def __init__(self, output_dir: str = "output/downloads"):
+    def __init__(self, output_dir="output/downloads"):
 
         self.output_dir = Path(output_dir)
 
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-
-    def download(self, info: UrlInfo) -> Path | None:
-        """
-        Download one video.
-
-        Returns
-        -------
-        Path | None
-            Downloaded file path.
-        """
-
-        if info.url_type != "video":
-            print("Only video URL can be downloaded.")
-            return None
-
-        output_template = str(
-            self.output_dir / f"{info.resource_id}.%(ext)s"
+        self.output_dir.mkdir(
+            parents=True,
+            exist_ok=True,
         )
 
-        options = {
-            "outtmpl": output_template,
-            "quiet": False,
-            "noplaylist": True,
-            "merge_output_format": "mp4",
-            "cookiefile": "cookies.txt",
-        }
+    def download(self, url: str) -> Path:
 
-        try:
+        print("\n==========================")
+        print("Platform Detect")
+        print("==========================")
 
-            with yt_dlp.YoutubeDL(options) as ydl:
+        page = get_greenvideo_page(url)
 
-                ydl.download([info.original_url])
+        print(page)
 
-        except Exception as e:
+        print("\n==========================")
+        print("Downloader")
+        print("==========================")
 
-            print(f"\nDownload failed:\n{e}")
+        #
+        # 目前统一使用 GreenVideo
+        #
 
-            return None
+        downloader = GreenVideoDownloader()
 
-        for file in self.output_dir.iterdir():
-
-            if file.stem == info.resource_id:
-
-                return file
-
-        return None
-    
+        return downloader.download(
+            video_url=url,
+            output_dir=self.output_dir,
+        )

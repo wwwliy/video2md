@@ -135,10 +135,44 @@ class GreenVideoDownloader:
 
 if __name__ == "__main__":
 
-    url = "https://www.douyin.com/video/7660952849539547249"
+    import sys
+
+    if len(sys.argv) != 2:
+
+        print()
+        print("GreenVideo Downloader")
+        print()
+        print("Usage:")
+        print(
+            'python -m downloader.providers.greenvideo '
+            '"https://video_url"'
+        )
+        print()
+
+        sys.exit(1)
+
+    video_url = sys.argv[1]
 
     downloader = GreenVideoDownloader()
 
-    video = downloader.download(url)
+    try:
 
-    print(video)
+        video = downloader.download(video_url)
+
+        print()
+        print("=" * 40)
+        print("Download Success")
+        print("=" * 40)
+        print(video)
+        print()
+
+    except Exception as e:
+
+        print()
+        print("=" * 40)
+        print("Download Failed")
+        print("=" * 40)
+        print(e)
+        print()
+
+        sys.exit(1)

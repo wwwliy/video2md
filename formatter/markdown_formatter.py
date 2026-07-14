@@ -1,12 +1,22 @@
 from pathlib import Path
 from datetime import datetime
 
+try:
+    from opencc import OpenCC
+
+    cc = OpenCC("t2s")
+
+except ImportError:
+
+    cc = None
+
 from formatter.section_splitter import SectionSplitter
 
 
 class MarkdownFormatter:
 
     def __init__(self):
+
         self.splitter = SectionSplitter()
 
     def generate(
@@ -15,6 +25,16 @@ class MarkdownFormatter:
         video_info: dict = None,
         output_file: str = None,
     ) -> str:
+
+        #
+        # 自动繁体 -> 简体
+        #
+
+        if cc is not None:
+
+            print("[Formatter] Traditional -> Simplified")
+
+            text = cc.convert(text)
 
         if video_info is None:
             video_info = {}
@@ -28,7 +48,10 @@ class MarkdownFormatter:
 
         collect_date = datetime.now().strftime("%Y-%m-%d")
 
+        #
         # 自动分段
+        #
+
         sections = self.splitter.split(text)
 
         md = []
@@ -49,14 +72,19 @@ class MarkdownFormatter:
 
         md.append(f"平台：{platform}")
         md.append("")
+
         md.append(f"作者：{author}")
         md.append("")
+
         md.append(f"链接：{url}")
         md.append("")
+
         md.append(f"发布日期：{publish_date}")
         md.append("")
+
         md.append(f"采集日期：{collect_date}")
         md.append("")
+
         md.append(f"时长：{duration}")
         md.append("")
 
@@ -64,11 +92,12 @@ class MarkdownFormatter:
         md.append("")
 
         # ==========================
-        # 核心观点（后续AI）
+        # 核心观点（AI）
         # ==========================
 
         md.append("## 核心观点")
         md.append("")
+
         md.append("> （待 AI 总结）")
         md.append("")
 
@@ -115,20 +144,24 @@ class MarkdownFormatter:
                 md.append(f"### {idx}、{title}")
 
             md.append("")
+
             md.append(section["content"])
+
             md.append("")
 
         md.append("---")
         md.append("")
 
         # ==========================
-        # 金句（后续AI）
+        # 金句（AI）
         # ==========================
 
         md.append("## 金句")
         md.append("")
+
         md.append("> （待 AI 提取）")
         md.append("")
+
         md.append("> （待 AI 提取）")
         md.append("")
 

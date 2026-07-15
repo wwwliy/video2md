@@ -20,7 +20,7 @@ class MarkdownParser:
     def __init__(self):
 
         self.section_pattern = re.compile(
-            r"^##\s*(.+?)\s*$",
+            r"^#{2,3}\s*(.+?)\s*$",
             re.MULTILINE,
         )
 
@@ -45,25 +45,62 @@ class MarkdownParser:
 
             key = self._normalize(name)
 
-            if key == "视频信息":
+            # ---------------- Video ----------------
+
+            if "视频信息" in key:
 
                 doc.video_info = self._parse_video_info(body)
 
-            elif key == "核心观点":
+            # ---------------- Viewpoints ----------------
 
-                doc.viewpoints = self._parse_list(body)
+            elif (
+                "核心观点" in key
+                or "主要观点" in key
+                or "观点" in key
+            ):
 
-            elif key == "关键词":
+                doc.viewpoints.extend(
+                    self._parse_list(body)
+                )
 
-                doc.keywords = self._parse_keywords(body)
+            # ---------------- Keywords ----------------
 
-            elif key == "内容整理":
+            elif (
+                "关键词" in key
+                or "关键字" in key
+                or "标签" in key
+            ):
 
-                doc.contents = self._parse_content(body)
+                doc.keywords.extend(
+                    self._parse_keywords(body)
+                )
 
-            elif key == "金句":
+            # ---------------- Content ----------------
 
-                doc.quotes = self._parse_list(body)
+            elif (
+                "内容整理" in key
+                or "内容总结" in key
+                or "整理" in key
+                or "总结" in key
+                or "正文" in key
+            ):
+
+                doc.contents.extend(
+                    self._parse_content(body)
+                )
+
+            # ---------------- Quotes ----------------
+
+            elif (
+                "金句" in key
+                or "经典语录" in key
+                or "语录" in key
+                or "精彩语句" in key
+            ):
+
+                doc.quotes.extend(
+                    self._parse_list(body)
+                )
 
         return doc
 
@@ -101,11 +138,11 @@ class MarkdownParser:
 
         result = {}
 
-        for i, m in enumerate(matches):
+        for i, match in enumerate(matches):
 
-            name = m.group(1).strip()
+            name = match.group(1).strip()
 
-            start = m.end()
+            start = match.end()
 
             if i == len(matches) - 1:
 
@@ -131,11 +168,17 @@ class MarkdownParser:
         title = title.strip()
 
         title = title.replace("：", "")
-
         title = title.replace(":", "")
+        title = title.replace("**", "")
 
-        return title
+        # 去掉常见编号
+        title = re.sub(
+            r"^[\s]*(第?\d+[章节部分]?[、.．:]?|[一二三四五六七八九十]+[、.．:]?|[①②③④⑤⑥⑦⑧⑨⑩])[ ]*",
+            "",
+            title,
+        )
 
+        return title.strip()
     # ---------------------------------------------------------
     # video info
     # ---------------------------------------------------------
@@ -152,20 +195,29 @@ class MarkdownParser:
             line = line.strip()
 
             if not line:
-
                 continue
 
             if "http" in line:
 
-                info.url = line.split()[-1]
+                match = re.search(
+                    r"https?://\S+",
+                    line,
+                )
+
+                if match:
+                    info.url = match.group(0)
 
             elif "采集时间" in line:
 
-                value = line.split("：")[-1]
+                value = re.split(
+                    r"[：:]",
+                    line,
+                    maxsplit=1,
+                )
 
-                value = value.split(":")[-1]
+                if len(value) > 1:
 
-                info.collected_at = value.strip()
+                    info.collected_at = value[1].strip()
 
         return info
 
@@ -185,7 +237,6 @@ class MarkdownParser:
             line = line.strip()
 
             if not line:
-
                 continue
 
             line = re.sub(
@@ -199,6 +250,14 @@ class MarkdownParser:
                 "",
                 line,
             )
+
+            line = re.sub(
+                r"^[①②③④⑤⑥⑦⑧⑨⑩]\s*",
+                "",
+                line,
+            )
+
+            line = line.strip()
 
             if line:
 
@@ -215,19 +274,36 @@ class MarkdownParser:
         text: str,
     ) -> list[str]:
 
-        text = text.replace("\n", ",")
-
-        text = text.replace("，", ",")
-
         result = []
 
-        for item in text.split(","):
+        for line in text.splitlines():
 
-            item = item.strip()
+            line = line.strip()
 
-            if item:
+            if not line:
+                continue
 
-                result.append(item)
+            line = re.sub(
+                r"^[-*•]\s*",
+                "",
+                line,
+            )
+
+            line = re.sub(
+                r"^\d+[.)、]\s*",
+                "",
+                line,
+            )
+
+            line = line.replace("，", ",")
+
+            for item in line.split(","):
+
+                item = item.strip()
+
+                if item:
+
+                    result.append(item)
 
         return result
 
@@ -242,12 +318,30 @@ class MarkdownParser:
 
         paragraphs = []
 
-        for p in text.split("\n\n"):
+        current = []
 
-            p = p.strip()
+        for line in text.splitlines():
 
-            if p:
+            line = line.rstrip()
 
-                paragraphs.append(p)
+            if not line.strip():
+
+                if current:
+
+                    paragraphs.append(
+                        "\n".join(current).strip()
+                    )
+
+                    current = []
+
+                continue
+
+            current.append(line)
+
+        if current:
+
+            paragraphs.append(
+                "\n".join(current).strip()
+            )
 
         return paragraphs
